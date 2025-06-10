@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, FileText } from "lucide-react";
 
-const ChatInterface = ({ uploadedResume, resumeContent }) => {
+const ChatInterface = ({ uploadedResume, sessionId }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -50,61 +50,35 @@ const ChatInterface = ({ uploadedResume, resumeContent }) => {
     setIsTyping(true);
 
     // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage, resumeContent);
-      const assistantMessage = {
-        id: Date.now() + 1,
-        type: "assistant",
-        content: aiResponse,
-        timestamp: new Date(),
-      };
+    const aiResponse = await generateAIResponse(inputMessage, sessionId);
+    const assistantMessage = {
+      id: Date.now() + 1,
+      type: "assistant",
+      content: aiResponse,
+      timestamp: new Date(),
+    };
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000);
+    setMessages((prev) => [...prev, assistantMessage]);
+    setIsTyping(false);
   };
 
-  const generateAIResponse = (question, resumeContent) => {
-    // Simple mock AI responses based on common resume questions
-    const lowercaseQuestion = question.toLowerCase();
+  const generateAIResponse = async (question, sessionId) => {
+    const response = await fetch(
+      `${process.env.REACT_APP_BACKEND_URL}/session/chat`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: process.env.REACT_APP_AUTHORIZATION_HEADER,
+        },
+        body: JSON.stringify({
+          question,
+          sessionId,
+        }),
+      }
+    );
 
-    if (
-      lowercaseQuestion.includes("experience") ||
-      lowercaseQuestion.includes("work")
-    ) {
-      return "Based on your resume, I can see you have relevant professional experience. Could you tell me which specific role or project you'd like to discuss in detail? I can help you articulate your achievements and impact.";
-    }
-
-    if (
-      lowercaseQuestion.includes("skill") ||
-      lowercaseQuestion.includes("technical")
-    ) {
-      return "I notice several key skills mentioned in your resume. Let's discuss how these skills align with your career goals. Which skills would you like to highlight or develop further?";
-    }
-
-    if (
-      lowercaseQuestion.includes("interview") ||
-      lowercaseQuestion.includes("question")
-    ) {
-      return "Great question! Based on your background, here are some common interview questions you might encounter:\n\n1. 'Tell me about yourself'\n2. 'What's your greatest strength?'\n3. 'Describe a challenging project you worked on'\n\nWould you like me to help you prepare answers for any of these?";
-    }
-
-    if (
-      lowercaseQuestion.includes("improve") ||
-      lowercaseQuestion.includes("better")
-    ) {
-      return "To make your resume even stronger, consider:\n\n• Adding quantifiable achievements (numbers, percentages, impact)\n• Using strong action verbs\n• Tailoring content to specific job descriptions\n• Highlighting relevant keywords for ATS systems\n\nWhich area would you like to focus on?";
-    }
-
-    if (
-      lowercaseQuestion.includes("career") ||
-      lowercaseQuestion.includes("path")
-    ) {
-      return "Based on your background, there are several exciting career paths you could pursue. Let's explore your interests and goals to identify the best opportunities. What type of role or industry are you most interested in?";
-    }
-
-    // Default response
-    return `That's an interesting question about your career! Based on your resume, I can provide personalized insights. Could you be more specific about what aspect you'd like to explore? I'm here to help with:\n\n• Career advice and next steps\n• Interview preparation\n• Skill development recommendations\n• Resume optimization tips\n• Job search strategies`;
+    const data = await response.json();
+    return data.answer;
   };
 
   const handleKeyPress = (e) => {

@@ -2,14 +2,10 @@ import React, { useState, useEffect } from "react";
 import ResumeUpload from "./components/ResumeUpload";
 import ChatInterface from "./components/ChatInterface";
 import "./App.css";
-const fetchResume = async (
-  setUploadedResume,
-  setResumeContent,
-  setIsLoading
-) => {
+const fetchResume = async (setUploadedResume, setSessionId, setIsLoading) => {
   try {
     const response = await fetch(
-      `${process.env.REACT_APP_BACKEND_URL}/resume`,
+      `${process.env.REACT_APP_BACKEND_URL}/resume/latest`,
       {
         headers: {
           Authorization: process.env.REACT_APP_AUTHORIZATION_HEADER,
@@ -20,14 +16,22 @@ const fetchResume = async (
     if (response.ok) {
       const data = await response.json();
 
-      let file = data[data.length - 1];
-      if (file) {
+      if (data) {
         // Create a File object from the response
         setUploadedResume({
-          name: file.metadata.fileName,
-          size: file.metadata.fileSize,
+          name: data.metadata.fileName,
+          size: data.metadata.fileSize,
+          sessionId: data.user_id,
+          id: data.id,
         });
-        setResumeContent(file.raw_text);
+        // attach the session id to the browser url
+        window.history.pushState(
+          {},
+          "",
+          `${window.location.pathname}?sessionId=${data.user_id}`
+        );
+
+        setSessionId(data.user_id);
       }
     }
   } catch (error) {
@@ -39,16 +43,19 @@ const fetchResume = async (
 
 function App() {
   const [uploadedResume, setUploadedResume] = useState(null);
-  const [resumeContent, setResumeContent] = useState();
+  const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchResume(setUploadedResume, setResumeContent, setIsLoading);
+    fetchResume(setUploadedResume, setSessionId, setIsLoading);
   }, []);
 
-  const handleResumeUpload = (file, content) => {
+  const handleResumeUpload = (file, content, isRemove) => {
     setUploadedResume(file);
-    setResumeContent(content);
+    if (!isRemove) {
+      fetchResume(setUploadedResume, setSessionId, setIsLoading);
+    }
+    setIsLoading(false);
   };
 
   return (
@@ -58,17 +65,14 @@ function App() {
         <ResumeUpload
           onResumeUpload={handleResumeUpload}
           uploadedResume={uploadedResume}
-          resumeContent={resumeContent}
+          sessionId={sessionId}
           isLoading={isLoading}
         />
       </div>
 
       {/* Right Side - Chat Interface */}
       <div className="flex-1 flex flex-col bg-chat-bg">
-        <ChatInterface
-          uploadedResume={uploadedResume}
-          resumeContent={resumeContent}
-        />
+        <ChatInterface uploadedResume={uploadedResume} sessionId={sessionId} />
       </div>
     </div>
   );

@@ -1,12 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Upload, FileText, X, CheckCircle } from "lucide-react";
 
-const ResumeUpload = ({
-  onResumeUpload,
-  uploadedResume,
-  resumeContent,
-  isLoading,
-}) => {
+const ResumeUpload = ({ onResumeUpload, uploadedResume, isLoading }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -87,7 +82,26 @@ const ResumeUpload = ({
         throw new Error("Failed to upload file to storage");
       }
 
-      onResumeUpload(file, "");
+      // Call backend to process the uploaded resume
+      const processResumeResponse = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/resume`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${process.env.REACT_APP_AUTHORIZATION_HEADER}`,
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+          }),
+        }
+      );
+
+      if (!processResumeResponse.ok) {
+        throw new Error("Failed to process resume");
+      }
+
+      onResumeUpload(file, "", false);
     } catch (error) {
       console.error("Error processing file:", error);
       alert("Error processing file. Please try again.");
@@ -96,8 +110,9 @@ const ResumeUpload = ({
     }
   };
 
-  const removeResume = () => {
-    onResumeUpload(null, "");
+  const removeResume = async () => {
+    onResumeUpload(null, "", true);
+    await deleteResume(uploadedResume.id);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -178,9 +193,7 @@ const ResumeUpload = ({
               <FileText className="h-8 w-8 text-blue-400 mr-3" />
               <div>
                 <p className="text-white font-medium">{uploadedResume.name}</p>
-                <p className="text-gray-400 text-sm">
-                  {(uploadedResume.size / 1024).toFixed(2)} KB
-                </p>
+                <p className="text-gray-400 text-sm">{uploadedResume.size}</p>
               </div>
             </div>
           </div>
@@ -198,3 +211,17 @@ const ResumeUpload = ({
 };
 
 export default ResumeUpload;
+
+const deleteResume = async (id) => {
+  await fetch(`${process.env.REACT_APP_BACKEND_URL}/resume/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `${process.env.REACT_APP_AUTHORIZATION_HEADER}`,
+    },
+  });
+
+  // Remove sessionId from URL
+  const url = new URL(window.location);
+  url.searchParams.delete("sessionId");
+  window.history.pushState({}, "", url);
+};
