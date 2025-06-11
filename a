@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    server_name chat-resume.magickiri.online;
+
+    root /var/www/bonga-app/resume-chat/build;
+    index index.html;
+
+    location / {
+        try_files $uri /index.html =404;
+    }
+}

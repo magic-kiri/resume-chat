@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import ResumeUpload from "./components/ResumeUpload";
-import ChatInterface from "./components/ChatInterface";
+import ResumeUpload from "./components/ResumeUpload.jsx";
+import ChatInterface from "./components/ChatInterface.jsx";
 import "./App.css";
+
 const fetchResume = async (setUploadedResume, setSessionId, setIsLoading) => {
   try {
     const response = await fetch(
@@ -78,4 +79,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 

@@ -224,4 +224,4 @@ const deleteResume = async (id) => {
   const url = new URL(window.location);
   url.searchParams.delete("sessionId");
   window.history.pushState({}, "", url);
-};
+}; 

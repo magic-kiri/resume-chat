@@ -257,4 +257,4 @@ const ChatInterface = ({ uploadedResume, sessionId }) => {
   );
 };
 
-export default ChatInterface;
+export default ChatInterface; 
