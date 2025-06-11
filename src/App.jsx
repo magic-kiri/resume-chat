@@ -6,10 +6,10 @@ import "./App.css";
 const fetchResume = async (setUploadedResume, setSessionId, setIsLoading) => {
   try {
     const response = await fetch(
-      `${process.env.REACT_APP_BACKEND_URL}/resume/latest`,
+      `${import.meta.env.VITE_BACKEND_URL}/resume/latest`,
       {
         headers: {
-          Authorization: process.env.REACT_APP_AUTHORIZATION_HEADER,
+          Authorization: import.meta.env.VITE_AUTHORIZATION_HEADER,
         },
       }
     );

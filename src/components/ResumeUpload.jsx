@@ -51,23 +51,23 @@ const ResumeUpload = ({ onResumeUpload, uploadedResume, isLoading }) => {
 
     try {
       // Get presigned URL
-      const presignedUrlResponse = await fetch(
-        `${
-          process.env.REACT_APP_BACKEND_URL
-        }/resume/getSignedUrl?filename=${encodeURIComponent(file.name)}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/resume/getSignedUrl?filename=${encodeURIComponent(
+          file.name
+        )}`,
         {
           method: "GET",
           headers: {
-            Authorization: `${process.env.REACT_APP_AUTHORIZATION_HEADER}`,
+            Authorization: `${import.meta.env.VITE_AUTHORIZATION_HEADER}`,
           },
         }
       );
 
-      if (!presignedUrlResponse.ok) {
+      if (!response.ok) {
         throw new Error("Failed to get upload URL");
       }
 
-      const { url: presignedUrl } = await presignedUrlResponse.json();
+      const { url: presignedUrl } = await response.json();
 
       // Upload file to S3 using presigned URL
       const uploadResponse = await fetch(presignedUrl, {
@@ -83,13 +83,13 @@ const ResumeUpload = ({ onResumeUpload, uploadedResume, isLoading }) => {
       }
 
       // Call backend to process the uploaded resume
-      const processResumeResponse = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/resume`,
+      const processResponse = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/resume`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `${process.env.REACT_APP_AUTHORIZATION_HEADER}`,
+            Authorization: `${import.meta.env.VITE_AUTHORIZATION_HEADER}`,
           },
           body: JSON.stringify({
             fileName: file.name,
@@ -97,7 +97,7 @@ const ResumeUpload = ({ onResumeUpload, uploadedResume, isLoading }) => {
         }
       );
 
-      if (!processResumeResponse.ok) {
+      if (!processResponse.ok) {
         throw new Error("Failed to process resume");
       }
 
@@ -213,10 +213,10 @@ const ResumeUpload = ({ onResumeUpload, uploadedResume, isLoading }) => {
 export default ResumeUpload;
 
 const deleteResume = async (id) => {
-  await fetch(`${process.env.REACT_APP_BACKEND_URL}/resume/${id}`, {
+  await fetch(`${import.meta.env.VITE_BACKEND_URL}/resume/${id}`, {
     method: "DELETE",
     headers: {
-      Authorization: `${process.env.REACT_APP_AUTHORIZATION_HEADER}`,
+      Authorization: `${import.meta.env.VITE_AUTHORIZATION_HEADER}`,
     },
   });
 

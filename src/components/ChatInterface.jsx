@@ -64,15 +64,15 @@ const ChatInterface = ({ uploadedResume, sessionId }) => {
 
   const generateAIResponse = async (question, sessionId) => {
     const response = await fetch(
-      `${process.env.REACT_APP_BACKEND_URL}/session/chat`,
+      `${import.meta.env.VITE_BACKEND_URL}/session/chat`,
       {
         method: "POST",
         headers: {
-          Authorization: process.env.REACT_APP_AUTHORIZATION_HEADER,
+          Authorization: import.meta.env.VITE_AUTHORIZATION_HEADER,
         },
         body: JSON.stringify({
-          question,
-          sessionId,
+          question: question,
+          sessionId: sessionId,
         }),
       }
     );
