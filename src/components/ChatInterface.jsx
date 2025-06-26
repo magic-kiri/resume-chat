@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, FileText } from "lucide-react";
+import VoiceInput from './VoiceInput';
 
 const ChatInterface = ({ uploadedResume, sessionId }) => {
   const [messages, setMessages] = useState([]);
@@ -34,6 +35,10 @@ const ChatInterface = ({ uploadedResume, sessionId }) => {
       ]);
     }
   }, [uploadedResume, messages.length]);
+
+  const handleVoiceTranscript = (transcript) => {
+    setInputMessage(transcript);
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -120,7 +125,7 @@ const ChatInterface = ({ uploadedResume, sessionId }) => {
           <div>
             <h1 className="text-lg font-semibold">Resume Chat Assistant</h1>
             <p className="text-sm text-gray-400">
-              Discussing: {uploadedResume.name}
+              {uploadedResume ? `Discussing: ${uploadedResume.name}` : 'Upload a resume to get started'}
             </p>
           </div>
         </div>
@@ -201,7 +206,7 @@ const ChatInterface = ({ uploadedResume, sessionId }) => {
 
       {/* Input */}
       <div className="border-t border-gray-700 p-4">
-        <div className="flex space-x-4">
+        <div className="flex space-x-2">
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -220,6 +225,11 @@ const ChatInterface = ({ uploadedResume, sessionId }) => {
               <Send className="h-4 w-4" />
             </button>
           </div>
+          <VoiceInput 
+            onTranscript={handleVoiceTranscript}
+            disabled={isTyping}
+            currentText={inputMessage}
+          />
         </div>
 
         <div className="mt-2 flex flex-wrap gap-2">

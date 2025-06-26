@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ResumeUpload from "./components/ResumeUpload.jsx";
+import Layout from "./components/Layout.jsx";
 import ChatInterface from "./components/ChatInterface.jsx";
 import "./App.css";
 
@@ -60,22 +60,14 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Left Sidebar - Resume Upload */}
-      <div className="w-80 bg-sidebar-bg border-r border-gray-700 flex flex-col">
-        <ResumeUpload
-          onResumeUpload={handleResumeUpload}
-          uploadedResume={uploadedResume}
-          sessionId={sessionId}
-          isLoading={isLoading}
-        />
-      </div>
-
-      {/* Right Side - Chat Interface */}
-      <div className="flex-1 flex flex-col bg-chat-bg">
-        <ChatInterface uploadedResume={uploadedResume} sessionId={sessionId} />
-      </div>
-    </div>
+    <Layout
+      onResumeUpload={handleResumeUpload}
+      uploadedResume={uploadedResume}
+      sessionId={sessionId}
+      isLoading={isLoading}
+    >
+      <ChatInterface uploadedResume={uploadedResume} sessionId={sessionId} />
+    </Layout>
   );
 }
 
