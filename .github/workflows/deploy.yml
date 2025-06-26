@@ -27,5 +27,11 @@ jobs:
             echo "Pulling latest changes..."
             git pull origin main
 
+            echo "Install dependencies..."
+            npm run install
+
+            echo "Build project"
+            npm run build
+
             echo "Resume Chat deployed successfully!"
           EOF
