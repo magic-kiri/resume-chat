@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Input Diagnostics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #4CAF50;
+        }
+        .error {
+            background-color: #f44336;
+        }
+        .warning {
+            background-color: #ff9800;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .test-btn:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Input Diagnostics</h1>
+    <p>This page helps diagnose voice input issues in production.</p>
+    
+    <div id="diagnostics"></div>
+    
+    <button id="testBtn" class="test-btn">Test Voice Input</button>
+    <div id="result"></div>
+    
+    <h2>Debug Information</h2>
+    <pre id="debugInfo"></pre>
+
+    <script>
+        const diagnosticsDiv = document.getElementById('diagnostics');
+        const testBtn = document.getElementById('testBtn');
+        const resultDiv = document.getElementById('result');
+        const debugInfo = document.getElementById('debugInfo');
+
+        // Run diagnostics
+        function runDiagnostics() {
+            const checks = [];
+            
+            // Check HTTPS
+            const isHTTPS = window.location.protocol === 'https:';
+            checks.push({
+                name: 'HTTPS',
+                status: isHTTPS ? 'success' : 'error',
+                message: isHTTPS ? 'Site is served over HTTPS ✓' : 'Site is NOT served over HTTPS ✗ (Required for voice input)'
+            });
+            
+            // Check secure context
+            const isSecureContext = window.isSecureContext;
+            checks.push({
+                name: 'Secure Context',
+                status: isSecureContext ? 'success' : 'error',
+                message: isSecureContext ? 'Secure context available ✓' : 'Secure context NOT available ✗'
+            });
+            
+            // Check Speech Recognition API
+            const hasSpeechRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+            checks.push({
+                name: 'Speech Recognition API',
+                status: hasSpeechRecognition ? 'success' : 'error',
+                message: hasSpeechRecognition ? 'Speech Recognition API available ✓' : 'Speech Recognition API NOT available ✗'
+            });
+            
+            // Check getUserMedia
+            const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            checks.push({
+                name: 'getUserMedia',
+                status: hasGetUserMedia ? 'success' : 'warning',
+                message: hasGetUserMedia ? 'getUserMedia API available ✓' : 'getUserMedia API NOT available (may affect microphone access)'
+            });
+            
+            // Display results
+            diagnosticsDiv.innerHTML = checks.map(check => 
+                `<div class="status ${check.status}">${check.message}</div>`
+            ).join('');
+            
+            // Enable test button only if basic requirements are met
+            testBtn.disabled = !isSecureContext || !hasSpeechRecognition;
+            
+            // Display debug info
+            debugInfo.textContent = JSON.stringify({
+                protocol: window.location.protocol,
+                host: window.location.host,
+                isSecureContext: window.isSecureContext,
+                userAgent: navigator.userAgent,
+                SpeechRecognition: !!(window.SpeechRecognition),
+                webkitSpeechRecognition: !!(window.webkitSpeechRecognition),
+                getUserMedia: hasGetUserMedia,
+                timestamp: new Date().toISOString()
+            }, null, 2);
+        }
+
+        // Test voice input
+        testBtn.addEventListener('click', async () => {
+            resultDiv.innerHTML = '<div class="status warning">Testing voice input...</div>';
+            
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onstart = () => {
+                    resultDiv.innerHTML = '<div class="status success">Voice input started! Say something...</div>';
+                };
+                
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    resultDiv.innerHTML = `<div class="status success">Voice input successful! You said: "${transcript}"</div>`;
+                };
+                
+                recognition.onerror = (event) => {
+                    resultDiv.innerHTML = `<div class="status error">Voice input failed: ${event.error}</div>`;
+                };
+                
+                recognition.onend = () => {
+                    if (resultDiv.innerHTML.includes('Say something')) {
+                        resultDiv.innerHTML = '<div class="status warning">Voice input ended without results. Try speaking louder or check microphone permissions.</div>';
+                    }
+                };
+                
+                recognition.start();
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Error starting voice input: ${error.message}</div>`;
+            }
+        });
+
+        // Run diagnostics on page load
+        runDiagnostics();
+    </script>
+</body>
+</html> 

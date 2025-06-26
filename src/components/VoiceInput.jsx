@@ -4,6 +4,8 @@ import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognitio
 
 const VoiceInput = ({ onTranscript, disabled = false, currentText = '' }) => {
   const [isListening, setIsListening] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [initError, setInitError] = useState(null);
   const shortPauseTimeoutRef = useRef(null);
   const mediumPauseTimeoutRef = useRef(null);
   const longPauseTimeoutRef = useRef(null);
@@ -19,6 +21,50 @@ const VoiceInput = ({ onTranscript, disabled = false, currentText = '' }) => {
     resetTranscript,
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
+
+  // Initialize speech recognition on component mount
+  useEffect(() => {
+    const initializeSpeechRecognition = () => {
+      try {
+        console.log('Initializing speech recognition...');
+        console.log('Browser supports speech recognition:', browserSupportsSpeechRecognition);
+        console.log('Secure context:', window.isSecureContext);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Host:', window.location.host);
+        
+        // Check browser support
+        if (!browserSupportsSpeechRecognition) {
+          throw new Error('Browser does not support speech recognition');
+        }
+
+        // Check secure context
+        const isSecureContext = window.isSecureContext || 
+                               window.location.protocol === 'https:' || 
+                               ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+
+        if (!isSecureContext) {
+          throw new Error('Speech recognition requires HTTPS');
+        }
+
+        // Check if speech recognition API is available
+        if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+          throw new Error('Speech Recognition API not available');
+        }
+
+        setIsInitialized(true);
+        setInitError(null);
+        console.log('Speech recognition initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize speech recognition:', error);
+        setInitError(error.message);
+        setIsInitialized(false);
+      }
+    };
+
+    // Add a small delay to ensure everything is loaded
+    const timer = setTimeout(initializeSpeechRecognition, 100);
+    return () => clearTimeout(timer);
+  }, [browserSupportsSpeechRecognition]);
 
   // Enhanced timeout strategy
   const clearAllTimeouts = () => {
@@ -172,8 +218,39 @@ const VoiceInput = ({ onTranscript, disabled = false, currentText = '' }) => {
   }, [transcript, isListening, onTranscript]);
 
   const startListening = () => {
+    console.log('startListening called');
+    console.log('browserSupportsSpeechRecognition:', browserSupportsSpeechRecognition);
+    console.log('window.isSecureContext:', window.isSecureContext);
+    console.log('window.location.protocol:', window.location.protocol);
+    console.log('window.location.hostname:', window.location.hostname);
+
     if (!browserSupportsSpeechRecognition) {
+      console.error('Browser does not support speech recognition');
       alert("Your browser doesn't support speech recognition. Please try using Chrome, Safari, or Edge.");
+      return;
+    }
+
+    // Check if we're on HTTPS or localhost
+    const isSecureContext = window.isSecureContext || 
+                           window.location.protocol === 'https:' || 
+                           ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+
+    console.log('isSecureContext:', isSecureContext);
+
+    if (!isSecureContext) {
+      console.error('Not in secure context');
+      alert(
+        "Voice input requires HTTPS for security reasons.\n\n" +
+        "This site is currently using HTTP, which blocks microphone access.\n\n" +
+        "Please contact the site administrator to enable HTTPS, or try accessing via a secure connection."
+      );
+      return;
+    }
+
+    // Check if SpeechRecognition is available
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      console.error('SpeechRecognition API not available');
+      alert("Speech Recognition API is not available in this browser or context.");
       return;
     }
 
@@ -184,9 +261,33 @@ const VoiceInput = ({ onTranscript, disabled = false, currentText = '' }) => {
     setIsListening(true);
     lastTranscriptRef.current = '';
     resetTranscript();
+    
+    console.log('Starting speech recognition...');
     SpeechRecognition.startListening({
       continuous: true,
       language: 'en-US',
+    }).catch((error) => {
+      console.error('Speech recognition error:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      setIsListening(false);
+      
+      if (error.name === 'NotAllowedError') {
+        alert("Microphone access was denied. Please allow microphone access and try again.");
+      } else if (error.name === 'NotSupportedError') {
+        alert("Speech recognition is not supported on this connection. Please use HTTPS.");
+      } else if (error.name === 'ServiceNotAllowedError') {
+        alert("Speech recognition service is not allowed. Please check your browser settings and ensure you're using HTTPS.");
+      } else if (error.name === 'BadGrammarError') {
+        alert("There was an issue with the speech recognition grammar. Please try again.");
+      } else if (error.name === 'LanguageNotSupportedError') {
+        alert("The specified language is not supported. Please try again.");
+      } else {
+        alert(`Voice input failed to start: ${error.message}. Please check your microphone permissions and ensure you're using HTTPS.`);
+      }
     });
   };
 
@@ -233,25 +334,52 @@ const VoiceInput = ({ onTranscript, disabled = false, currentText = '' }) => {
     };
   }, []);
 
-  if (!browserSupportsSpeechRecognition) {
-    return null; // Hide button if not supported
+  if (!browserSupportsSpeechRecognition || !isInitialized) {
+    return (
+      <button
+        disabled={true}
+        className="p-2 rounded-lg bg-gray-800 cursor-not-allowed text-gray-500 transition-colors"
+        title={
+          initError 
+            ? `Voice input unavailable: ${initError}`
+            : "Voice input not available"
+        }
+      >
+        <Mic className="h-4 w-4 opacity-50" />
+      </button>
+    );
   }
+
+  // Check if we're in a secure context
+  const isSecureContext = window.isSecureContext || 
+                         window.location.protocol === 'https:' || 
+                         ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 
   return (
     <button
       onClick={toggleListening}
-      disabled={disabled}
+      disabled={disabled || !isSecureContext || !isInitialized}
       className={`p-2 rounded-lg transition-colors ${
-        isListening
+        !isSecureContext || !isInitialized
+          ? 'bg-gray-800 cursor-not-allowed text-gray-500'
+          : isListening
           ? 'bg-red-600 hover:bg-red-700 animate-pulse'
           : 'bg-gray-600 hover:bg-gray-700'
       } disabled:bg-gray-800 disabled:cursor-not-allowed text-white`}
-      title={isListening ? 'Stop recording (auto-stops after 5s of silence)' : 'Start voice input'}
+      title={
+        !isInitialized
+          ? `Voice input initializing... ${initError ? `Error: ${initError}` : ''}`
+          : !isSecureContext
+          ? 'Voice input requires HTTPS - not available on HTTP'
+          : isListening 
+          ? 'Stop recording (auto-stops after 6s of silence)' 
+          : 'Start voice input'
+      }
     >
       {isListening ? (
         <MicOff className="h-4 w-4" />
       ) : (
-        <Mic className="h-4 w-4" />
+        <Mic className={`h-4 w-4 ${(!isSecureContext || !isInitialized) ? 'opacity-50' : ''}`} />
       )}
     </button>
   );
