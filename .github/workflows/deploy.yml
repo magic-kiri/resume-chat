@@ -28,7 +28,7 @@ jobs:
             git pull origin main
 
             echo "Install dependencies..."
-            npm run install
+            npm i
 
             echo "Build project"
             npm run build
